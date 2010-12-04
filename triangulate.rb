@@ -93,26 +93,26 @@ module Delaunay
     # Include each point one at a time into the existing mesh
     vertices.each_with_index { |current_point, i|
       edges.clear
-
       # Set up the edge buffer.
       # If the point (xp,yp) lies inside the circumcircle then the
       # three edges of that triangle are added to the edge buffer
       # and that triangle is removed.
       j = 0
 			tris_size = tris.size
-      while j < tris_size
-        if !tris[j].complete
-          p1 = vertices[tris[j].p1]
-          p2 = vertices[tris[j].p2]
-          p3 = vertices[tris[j].p3]
+			while j < tris_size
+				current_triangle = tris[j]
+        if !current_triangle.complete
+          p1 = vertices[current_triangle.p1]
+          p2 = vertices[current_triangle.p2]
+          p3 = vertices[current_triangle.p3]
           inside,xc,yc,r = circum_circle(current_point, p1, p2, p3, cc_cache)
           if (xc + r) < current_point.x
-            tris[j].complete = true
+            current_triangle.complete = true
           end
           if inside
-						edges << IEDGE.new(tris[j].p1, tris[j].p2)
-            edges << IEDGE.new(tris[j].p2, tris[j].p3)
-            edges << IEDGE.new(tris[j].p3, tris[j].p1)
+						edges << IEDGE.new(current_triangle.p1, current_triangle.p2)
+            edges << IEDGE.new(current_triangle.p2, current_triangle.p3)
+            edges << IEDGE.new(current_triangle.p3, current_triangle.p1)
             tris.delete_at(j)
 						tris_size -= 1
             j -= 1
@@ -120,39 +120,16 @@ module Delaunay
         end
         j += 1
       end #while j
-
-      # Tag multiple edges
-      # Note: if all triangles are specified anticlockwise then all
-      # interior edges are opposite pointing in direction.
-      j = 0
-      edges_size = edges.size
-			while j < edges_size - 1
-        k = j+1
-        while k < edges_size
-          if (edges[j] == edges[k])
-            edges[j].reset!
-            edges[k].reset!
-						# We can short circuit here; if there is another one, it will be caught 
-						# when the current k becomes j
-						break
-          end
-          k += 1
-        end #while k
-        j += 1
-      end #while j
-
-      # Form new triangles for the current point
-      # Skipping over any tagged edges.
-      # All edges are arranged in clockwise order.
-			edges.each do |edge|
-				if edge.valid? 
-					tri = ITRIANGLE.new(edge.p1, edge.p2, i)
-					tris << tri 
-				end
-			end
+			
+			while !edges.empty?
+				edge = edges.shift
+				rejected = edges.reject! {|e| e == edge}
+				tris << ITRIANGLE.new(edge.p1, edge.p2, i) if rejected.nil? 
+		 	end
+      
     } #each i
-
-    # Remove supertriangle vertices
+    
+		# Remove supertriangle vertices
 		3.times do 
 			vertices.pop
 		end
@@ -180,7 +157,7 @@ module Delaunay
     rsqr = 0
 
     if cached
-      xc, yc, r, rsqr = cached
+			xc, yc, r, rsqr = cached
     else
       # Check for coincident points
       if (points_are_coincident(p1,p2) || points_are_coincident(p2,p3) || points_are_coincident(p1,p3))
@@ -264,7 +241,7 @@ if __FILE__ == $PROGRAM_NAME
 
     def output(points, tris)
 			puts "Done.\n"
-			return
+			#return
       puts "void setup() { size(800, 800); }\nvoid draw() {"
 
       puts "\tscale(2);\n\tstrokeWeight(0.5);\n\tnoFill();\n\tbeginShape(TRIANGLES);"
