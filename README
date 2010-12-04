@@ -1,0 +1,3 @@
+This is a modified version of the triangulation from http://local.wasp.uwa.edu.au/~pbourke/papers/triangulate/
+
+I fixed a fatal bug in it and am trying to optimize it.
